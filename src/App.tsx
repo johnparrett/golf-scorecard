@@ -85,17 +85,24 @@ function App() {
   }, [setup, golfers, holesCount, currentHole, roundScores, currentPar, currentHoleScores, completedHolesCount, isEditingHole, showScorecard])
 
   useEffect(() => {
-    const check = () => {
+    const detectMobileDevice = () => {
       try {
-        setIsMobile(window.innerWidth <= 600 || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches))
-      } catch (e) {
-        setIsMobile(false)
+        if (typeof navigator === 'undefined') return false
+        const ua = navigator.userAgent || ''
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
+      } catch {
+        return false
       }
     }
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
+    setIsMobile(detectMobileDevice())
   }, [])
+
+  useEffect(() => {
+    try {
+      if (isMobile) document.body.classList.add('is-mobile-device')
+      else document.body.classList.remove('is-mobile-device')
+    } catch (e) {}
+  }, [isMobile])
 
   const closeKeypad = () => setKeypadTarget(null)
 
