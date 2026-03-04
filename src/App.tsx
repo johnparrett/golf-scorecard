@@ -64,6 +64,10 @@ function App() {
     return saved ? JSON.parse(saved).showScorecard : false
   })
 
+  // Mobile keypad state
+  const [isMobile, setIsMobile] = useState<boolean>(false)
+  const [keypadTarget, setKeypadTarget] = useState<string | null>(null)
+
   useEffect(() => {
     const state = {
       setup,
@@ -79,6 +83,45 @@ function App() {
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }, [setup, golfers, holesCount, currentHole, roundScores, currentPar, currentHoleScores, completedHolesCount, isEditingHole, showScorecard])
+
+  useEffect(() => {
+    const check = () => {
+      try {
+        setIsMobile(window.innerWidth <= 600 || (window.matchMedia && window.matchMedia('(pointer:coarse)').matches))
+      } catch (e) {
+        setIsMobile(false)
+      }
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const closeKeypad = () => setKeypadTarget(null)
+
+  const handleKeypadPress = (key: string) => {
+    if (!keypadTarget) return
+    setCurrentHoleScores(prev => {
+      const prevVal = prev[keypadTarget]
+      let str = typeof prevVal === 'number' ? String(prevVal) : (prevVal || '')
+
+      if (key === 'DEL') {
+        str = str.slice(0, -1)
+      } else {
+        // append digit
+        // avoid leading zeros
+        if (str === '0') str = key
+        else str = str + key
+      }
+
+      // compute numeric value and clamp
+      if (str === '') return { ...prev, [keypadTarget]: '' }
+      const parsed = parseInt(str || '0', 10)
+      const maxScorePossible = currentPar > 0 ? Math.min(currentPar * 2, MAX_DISPLAY_SCORE) : MAX_DISPLAY_SCORE
+      const clamped = Math.max(0, Math.min(parsed, maxScorePossible))
+      return { ...prev, [keypadTarget]: clamped }
+    })
+  }
 
   const handleAddGolfer = () => {
     setGolfers(prev => [
@@ -395,6 +438,9 @@ function App() {
                 onBlur={saveCurrentHole}
                 title={!currentPar && isEditingHole ? 'Set the hole par to enable scoring' : undefined}
                 disabled={!isEditingHole || !currentPar}
+                readOnly={isMobile}
+                onFocus={() => { if (isMobile && isEditingHole && currentPar) setKeypadTarget(name) }}
+                onClick={() => { if (isMobile && isEditingHole && currentPar) setKeypadTarget(name) }}
               />
               {!currentPar && isEditingHole && (
                 <button
@@ -431,6 +477,21 @@ function App() {
             </li>
           ))}
         </ul>
+
+        {keypadTarget && (
+          <div className="keypad-backdrop" onClick={closeKeypad}>
+            <div className="mobile-keypad" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+              <div className="keypad-grid">
+                {['1','2','3','4','5','6','7','8','9'].map(d => (
+                  <button key={d} className="keypad-btn" onClick={() => handleKeypadPress(d)} aria-label={`Digit ${d}`}>{d}</button>
+                ))}
+                <button className="keypad-btn delete" onClick={() => handleKeypadPress('DEL')} aria-label="Delete">⌫</button>
+                <button className="keypad-btn" onClick={() => handleKeypadPress('0')} aria-label="Digit 0">0</button>
+                <button className="keypad-btn close" onClick={closeKeypad} aria-label="Close keypad">✕</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="action-buttons">
           <button onClick={handlePrevHole} disabled={currentHole === 1} className="secondary-btn">
