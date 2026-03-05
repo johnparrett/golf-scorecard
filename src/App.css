@@ -301,7 +301,7 @@ body.is-mobile-device .golfer-name-inline {
 body.is-mobile-device .score-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   justify-content: space-between;
   width: 100%;
 }
@@ -313,11 +313,11 @@ body.is-mobile-device .score-controls input[type="number"] {
 }
 
 body.is-mobile-device .symbol {
-  margin-left: 8px;
+  margin-left: 0;
 }
 
 body.is-mobile-device .input-helper-icon {
-  margin-left: 8px;
+  margin-left: 0;
 }
 
 body.is-mobile-device .score-header > div {
