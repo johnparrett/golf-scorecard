@@ -504,3 +504,43 @@ body.is-mobile-device .action-buttons > button:disabled { opacity: 0.85; }
 body.is-mobile-device table {
   width: 100%;
 }
+
+/* Mobile - full screen container and input behavior */
+html, body {
+  height: 100%;
+}
+body.is-mobile-device {
+  background: #fff;
+  -webkit-text-size-adjust: 100%;
+}
+body.is-mobile-device #root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+body.is-mobile-device .container {
+  width: 100%;
+  max-width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  margin: 0;
+  border-radius: 0;
+  padding-top: env(safe-area-inset-top, 12px);
+  padding-bottom: env(safe-area-inset-bottom, 12px);
+  overflow-y: auto;
+  box-shadow: none;
+}
+/* Keep score input compact and prevent zoom on focus by using >= 16px font-size */
+body.is-mobile-device .score-controls input[type="number"],
+body.is-mobile-device input[type="number"] {
+  width: 48px;
+  flex: 0 0 48px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+body.is-mobile-device input[type="text"],
+body.is-mobile-device select,
+body.is-mobile-device input[type="number"] {
+  -webkit-text-size-adjust: 100%;
+  font-size: 18px;
+}
