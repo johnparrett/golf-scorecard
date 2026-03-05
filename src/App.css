@@ -302,7 +302,7 @@ body.is-mobile-device .score-controls {
   display: flex;
   align-items: center;
   gap: 10px;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
 }
 
@@ -451,6 +451,10 @@ body.is-mobile-device .container {
   box-sizing: border-box;
 }
 
+body.is-mobile-device {
+  justify-content: center;
+}
+
 body.is-mobile-device .golfer-setup-item {
   flex-direction: column;
   align-items: center;
@@ -512,6 +516,7 @@ html, body {
 body.is-mobile-device {
   background: #fff;
   -webkit-text-size-adjust: 100%;
+  justify-content: center;
 }
 body.is-mobile-device #root {
   min-height: 100vh;
