@@ -65,6 +65,11 @@ function App() {
   })
 
   const [isMobile, setIsMobile] = useState<boolean>(false)
+  const [compactView, setCompactView] = useState<boolean>(false)
+  const [fitToWidth, setFitToWidth] = useState<boolean>(false)
+  const tableContainerRef = useRef<HTMLDivElement | null>(null)
+  const tableRef = useRef<HTMLTableElement | null>(null)
+  const scaleRef = useRef<number>(1)
 
   useEffect(() => {
     const state = {
@@ -102,6 +107,37 @@ function App() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    if (!fitToWidth) {
+      // reset any scaling
+      if (tableRef.current) {
+        tableRef.current.style.transform = ''
+        tableRef.current.style.transformOrigin = ''
+      }
+      if (tableContainerRef.current) tableContainerRef.current.style.height = ''
+      return
+    }
+
+    const computeScale = () => {
+      const container = tableContainerRef.current
+      const table = tableRef.current
+      if (!container || !table) return
+      const available = container.clientWidth || container.getBoundingClientRect().width
+      const tableWidth = table.scrollWidth || table.getBoundingClientRect().width
+      const scale = Math.min(1, available / Math.max(1, tableWidth))
+      scaleRef.current = scale
+      table.style.transformOrigin = '0 0'
+      table.style.transform = `scale(${scale})`
+      // set container height so scaled table doesn't overflow visually
+      const tableHeight = table.scrollHeight || table.getBoundingClientRect().height
+      container.style.height = `${Math.ceil(tableHeight * scale)}px`
+    }
+
+    computeScale()
+    window.addEventListener('resize', computeScale)
+    return () => window.removeEventListener('resize', computeScale)
+  }, [fitToWidth])
 
   useEffect(() => {
     try {
@@ -322,10 +358,16 @@ function App() {
 
   if (showScorecard && setup) {
     return (
-      <div className="container scorecard-view">
-        <h1>Full Scorecard</h1>
-        <div className="table-container">
-          <table>
+      <div className={`container scorecard-view ${compactView ? 'compact' : ''} ${fitToWidth ? 'fit' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>Full Scorecard</h1>
+          <div className="scorecard-controls">
+            <button onClick={() => setCompactView(c => !c)} className="secondary-btn">{compactView ? 'Normal' : 'Compact'}</button>
+            <button onClick={() => setFitToWidth(f => !f)} style={{ marginLeft: '8px' }}>{fitToWidth ? 'Unfit' : 'Fit to Width'}</button>
+          </div>
+        </div>
+        <div className="table-container" ref={tableContainerRef}>
+          <table ref={tableRef}>
             <thead>
               <tr>
                 <th>Hole</th>
@@ -376,6 +418,10 @@ function App() {
 
   if (setup) {
     const sortedGolfers = getSortedGolfers()
+    const allScoresEntered = setup.golfers.every(name => {
+      const v = currentHoleScores[name]
+      return typeof v === 'number' && Number.isFinite(v) && v > 0
+    })
     
     return (
       <div className="container">
@@ -390,16 +436,16 @@ function App() {
           <div className="setup-section hole-grid">
             <label htmlFor="par-input" className="stacked-label">Par</label>
             <select
-            id="par-input"
-            value={currentPar || ''}
-            onChange={(e) => {
-              const v = parseInt(e.target.value)
-              setCurrentPar(Number.isNaN(v) ? 0 : Math.max(0, Math.min(5, v)))
-            }}
-            onBlur={saveCurrentHole}
-            disabled={!isEditingHole}
-          >
-            <option value="">Set par</option>
+              id="par-input"
+              value={currentPar || ''}
+              onChange={(e) => {
+                const v = parseInt(e.target.value)
+                setCurrentPar(Number.isNaN(v) ? 0 : Math.max(0, Math.min(5, v)))
+              }}
+              onBlur={saveCurrentHole}
+              disabled={!isEditingHole}
+            >
+              <option value="" disabled>Set par</option>
             <option value="1">1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -493,7 +539,7 @@ function App() {
           </button>
           <button 
             onClick={handleNextHole} 
-            disabled={!currentPar || (currentHole > roundScores.length && !isEditingHole)} 
+            disabled={!currentPar || (isEditingHole && !allScoresEntered)} 
             style={{ marginLeft: '10px' }}
           >
             {currentHole === setup.holesCount ? 'Finish Round' : 'Next Hole'}
