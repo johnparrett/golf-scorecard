@@ -64,9 +64,7 @@ function App() {
     return saved ? JSON.parse(saved).showScorecard : false
   })
 
-  // Mobile keypad state
   const [isMobile, setIsMobile] = useState<boolean>(false)
-  const [keypadTarget, setKeypadTarget] = useState<string | null>(null)
 
   useEffect(() => {
     const state = {
@@ -87,6 +85,10 @@ function App() {
   useEffect(() => {
     const detectMobileDevice = () => {
       try {
+        if (typeof window === 'undefined') return false
+        // Prefer viewport-based detection to avoid UA spoofing; fallback to UA regex
+        const isNarrow = window.matchMedia ? window.matchMedia('(max-width: 640px)').matches : (window.innerWidth <= 640)
+        if (isNarrow) return true
         if (typeof navigator === 'undefined') return false
         const ua = navigator.userAgent || ''
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)
@@ -94,7 +96,11 @@ function App() {
         return false
       }
     }
+
     setIsMobile(detectMobileDevice())
+    const handleResize = () => setIsMobile(detectMobileDevice())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
@@ -103,32 +109,6 @@ function App() {
       else document.body.classList.remove('is-mobile-device')
     } catch (e) {}
   }, [isMobile])
-
-  const closeKeypad = () => setKeypadTarget(null)
-
-  const handleKeypadPress = (key: string) => {
-    if (!keypadTarget) return
-    setCurrentHoleScores(prev => {
-      const prevVal = prev[keypadTarget]
-      let str = typeof prevVal === 'number' ? String(prevVal) : (prevVal || '')
-
-      if (key === 'DEL') {
-        str = str.slice(0, -1)
-      } else {
-        // append digit
-        // avoid leading zeros
-        if (str === '0') str = key
-        else str = str + key
-      }
-
-      // compute numeric value and clamp
-      if (str === '') return { ...prev, [keypadTarget]: '' }
-      const parsed = parseInt(str || '0', 10)
-      const maxScorePossible = currentPar > 0 ? Math.min(currentPar * 2, MAX_DISPLAY_SCORE) : MAX_DISPLAY_SCORE
-      const clamped = Math.max(0, Math.min(parsed, maxScorePossible))
-      return { ...prev, [keypadTarget]: clamped }
-    })
-  }
 
   const handleAddGolfer = () => {
     setGolfers(prev => [
@@ -406,9 +386,10 @@ function App() {
           )}
         </div>
         
-        <div className="setup-section">
-          <label htmlFor="par-input">Par </label>
-          <select
+        <div className="hole-row-wrapper">
+          <div className="setup-section hole-grid">
+            <label htmlFor="par-input" className="stacked-label">Par</label>
+            <select
             id="par-input"
             value={currentPar || ''}
             onChange={(e) => {
@@ -425,80 +406,86 @@ function App() {
             <option value="4">4</option>
             <option value="5">5</option>
           </select>
-        </div>
-        
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+          </div>
+
+          <ul className="score-list">
           {sortedGolfers.map((name) => (
             <li key={name} className="golfer-score-row" style={{ marginBottom: '15px' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{name}</div>
-              <label htmlFor={`${name}-score`}>Score </label>
-              <input
-                id={`${name}-score`}
-                type="number"
-                min={1}
-                max={currentPar > 0 ? currentPar * 2 : undefined}
-                value={currentHoleScores[name] ?? ''}
-                onChange={(e) => setCurrentHoleScores({
-                  ...currentHoleScores,
-                  [name]: e.target.value === '' ? '' : parseInt(e.target.value)
-                })}
-                onBlur={saveCurrentHole}
-                title={!currentPar && isEditingHole ? 'Set the hole par to enable scoring' : undefined}
-                disabled={!isEditingHole || !currentPar}
-                readOnly={isMobile}
-                onFocus={() => { if (isMobile && isEditingHole && currentPar) setKeypadTarget(name) }}
-                onClick={() => { if (isMobile && isEditingHole && currentPar) setKeypadTarget(name) }}
-              />
-              {!currentPar && isEditingHole && (
-                <button
-                  type="button"
-                  className="input-helper-icon"
-                  title="Enable scoring (set hole value first)"
-                  aria-label="Enable scoring"
-                  onClick={() => {
-                    const el = document.getElementById('par-input') as HTMLElement | null
+              <label
+                htmlFor={`${name}-score`}
+                className="golfer-name-inline"
+                style={{ fontWeight: 'bold', textAlign: 'center' }}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  const el = document.getElementById(`${name}-score`) as HTMLInputElement | null
+                  if (el) el.focus()
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    const el = document.getElementById(`${name}-score`) as HTMLInputElement | null
                     if (el) el.focus()
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="12"></line>
-                    <circle cx="12" cy="16" r="1"></circle>
-                  </svg>
-                </button>
-              )}
-              {(() => {
-                const raw = currentHoleScores[name]
-                let displayNum: number | null = null
-                if (typeof raw === 'number') {
-                  const maxScorePossible = currentPar > 0 ? Math.min(currentPar * 2, MAX_DISPLAY_SCORE) : MAX_DISPLAY_SCORE
-                  displayNum = Math.min(raw, maxScorePossible)
-                }
-                const wide = displayNum !== null && displayNum >= 10
-                return (
-                  <span className={`symbol${wide ? ' wide' : ''}`}>
-                    {renderScore(currentHoleScores[name], currentPar)}
-                  </span>
-                )
-              })()}
+                  }
+                }}
+              >
+                {name}
+              </label>
+              <div className="score-controls">
+                <input
+                  id={`${name}-score`}
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min={1}
+                  aria-label="Score"
+                  max={currentPar > 0 ? currentPar * 2 : undefined}
+                  value={currentHoleScores[name] ?? ''}
+                  onChange={(e) => setCurrentHoleScores({
+                    ...currentHoleScores,
+                    [name]: e.target.value === '' ? '' : parseInt(e.target.value)
+                  })}
+                  onBlur={saveCurrentHole}
+                  title={!currentPar && isEditingHole ? 'Set the hole par to enable scoring' : undefined}
+                  disabled={!isEditingHole || !currentPar}
+                />
+                {!currentPar && isEditingHole && (
+                  <button
+                    type="button"
+                    className="input-helper-icon"
+                    title="Enable scoring (set hole value first)"
+                    aria-label="Enable scoring"
+                    onClick={() => {
+                      const el = document.getElementById('par-input') as HTMLElement | null
+                      if (el) el.focus()
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <circle cx="12" cy="16" r="1"></circle>
+                    </svg>
+                  </button>
+                )}
+                {(() => {
+                  const raw = currentHoleScores[name]
+                  let displayNum: number | null = null
+                  if (typeof raw === 'number') {
+                    const maxScorePossible = currentPar > 0 ? Math.min(currentPar * 2, MAX_DISPLAY_SCORE) : MAX_DISPLAY_SCORE
+                    displayNum = Math.min(raw, maxScorePossible)
+                  }
+                  const wide = displayNum !== null && displayNum >= 10
+                  return (
+                    <span className={`symbol${wide ? ' wide' : ''}`}>
+                      {renderScore(currentHoleScores[name], currentPar)}
+                    </span>
+                  )
+                })()}
+              </div>
             </li>
           ))}
-        </ul>
-
-        {keypadTarget && (
-          <div className="keypad-backdrop" onClick={closeKeypad}>
-            <div className="mobile-keypad" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-              <div className="keypad-grid">
-                {['1','2','3','4','5','6','7','8','9'].map(d => (
-                  <button key={d} className="keypad-btn" onClick={() => handleKeypadPress(d)} aria-label={`Digit ${d}`}>{d}</button>
-                ))}
-                <button className="keypad-btn delete" onClick={() => handleKeypadPress('DEL')} aria-label="Delete">⌫</button>
-                <button className="keypad-btn" onClick={() => handleKeypadPress('0')} aria-label="Digit 0">0</button>
-                <button className="keypad-btn close" onClick={closeKeypad} aria-label="Close keypad">✕</button>
-              </div>
-            </div>
-          </div>
-        )}
+          </ul>
+        </div>
 
         <div className="action-buttons">
           <button onClick={handlePrevHole} disabled={currentHole === 1} className="secondary-btn">

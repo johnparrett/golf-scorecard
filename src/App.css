@@ -6,11 +6,24 @@
 }
 
 .container {
-  background-color: #f9f9f9;
+  background-color: #ffffff;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   color: #333;
+  --score-col1: 80;
+  --score-col2: minmax(96px, 160px);
+  --score-grid-width: 222px; /* fixed grid width for pixel-perfect alignment */
+}
+
+.hole-row-wrapper {
+  display: grid;
+  grid-template-columns: var(--score-col1, max-content) var(--score-col2, minmax(96px,160px));
+  gap: 8px 12px;
+  width: var(--score-grid-width);
+  margin: 0 auto;
+  align-items: start;
+  box-sizing: border-box;
 }
 
 .setup-section {
@@ -192,6 +205,172 @@ label {
   font-weight: bold;
 }
 
+.stacked-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.golfer-name-inline {
+  display: inline-block;
+  min-width: 0;
+  width: auto;
+  white-space: nowrap;
+  text-align: center;
+  cursor: pointer;
+  color: #2c3e50;
+}
+
+.golfer-name-inline:hover,
+.golfer-name-inline:focus {
+  text-decoration: underline;
+  outline: none;
+}
+
+.score-header {
+  text-align: center;
+}
+
+/* center golfer rows within the container */
+.golfer-score-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Grid layout so golfer names share a column and score inputs line up */
+.score-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: var(--score-col1, max-content) var(--score-col2, minmax(96px, 160px));
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.score-list > li {
+  display: contents; /* let label + controls participate in the grid so columns align */
+}
+
+.score-header > div {
+  grid-column: 2; /* place the Score header over the score column */
+  justify-self: center;
+}
+
+.score-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+.score-controls input[type="number"] {
+  width: 36px;
+  padding: 6px;
+  text-align: center;
+  box-sizing: border-box;
+  flex: 0 0 40px; /* fix width so it doesn't expand on focus */
+}
+
+/* Restore stacked mobile layout when JS marks the UA as mobile */
+/* Restore stacked mobile layout when JS marks the UA as mobile */
+body.is-mobile-device .score-list,
+body.is-mobile-device .score-list > li {
+  display: block;
+}
+
+/* Mobile stacked layout tweaks: labels above controls, full-width inputs, tighter spacing */
+body.is-mobile-device .score-list > li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f4f4f4;
+}
+
+body.is-mobile-device .golfer-name-inline {
+  display: block;
+  width: 100%;
+  text-align: left;
+  white-space: normal; /* allow long names to wrap */
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+body.is-mobile-device .score-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+body.is-mobile-device .score-controls input[type="number"] {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+}
+
+body.is-mobile-device .symbol {
+  margin-left: 8px;
+}
+
+body.is-mobile-device .input-helper-icon {
+  margin-left: 8px;
+}
+
+body.is-mobile-device .score-header > div {
+  grid-column: auto;
+  justify-self: center;
+  margin-bottom: 12px;
+}
+
+/* Align the Par control to the same columns as the score list so inputs line up */
+.setup-section.hole-grid {
+  display: grid;
+  grid-template-columns: var(--score-col1, max-content) var(--score-col2, minmax(96px,160px));
+  gap: 8px 0px;
+  align-items: center;
+  justify-content: center;
+}
+
+.setup-section.hole-grid .stacked-label {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  margin-bottom: 4px;
+}
+
+.setup-section.hole-grid select {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+  text-align: center;
+  text-align-last: center;
+}
+
+.setup-section.hole-grid select option {
+  text-align: center;
+}
+
+/* mobile: fall back to block stacked layout */
+body.is-mobile-device .setup-section.hole-grid {
+  display: block;
+}
+/* ensure the par/grid wrapper uses the same fixed width */
+.setup-section.hole-grid {
+  width: var(--score-grid-width);
+  margin: 0 auto;
+}
+
+/* mobile override: allow full width */
+body.is-mobile-device .score-list,
+body.is-mobile-device .setup-section.hole-grid {
+  width: 100%;
+  margin: 0;
+}
+
 .input-helper-icon {
   margin-left: 8px;
   color: #666;
@@ -252,33 +431,7 @@ label {
 .keypad-btn.delete { background: #ffecec; }
 .keypad-btn.close { background: #ddd; }
 
-/* Animations for keypad */
-@keyframes fadeInBackdrop {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUpKeypad {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.keypad-backdrop {
-  animation: fadeInBackdrop 220ms ease-out;
-}
-
-.mobile-keypad {
-  will-change: transform, opacity;
-  animation: slideUpKeypad 260ms cubic-bezier(.22,1,.36,1) forwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .keypad-backdrop,
-  .mobile-keypad {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/* Animations removed to avoid build-time minifier issues */
 
 /* Mobile-device-only layout: apply when JS detects a mobile UA and adds
    the `is-mobile-device` class to the document body. This prevents
@@ -334,12 +487,11 @@ body.is-mobile-device .action-buttons > button {
 
 /* Emphasize primary action (e.g., Next Hole) on mobile */
 body.is-mobile-device .action-buttons > button:not(.secondary-btn):not(.delete-btn) {
-  background-color: #2e7d32; /* slightly darker green */
+  background-color: #4CAF50; /* original primary green */
   color: #fff;
   font-weight: 700;
   font-size: 18px;
   padding: 14px 18px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 
 body.is-mobile-device .action-buttons > button.secondary-btn { display: block; }
