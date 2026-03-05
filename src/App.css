@@ -19,7 +19,7 @@
 .hole-row-wrapper {
   display: grid;
   grid-template-columns: var(--score-col1, max-content) var(--score-col2, minmax(96px,160px));
-  gap: 8px 12px;
+  gap: 8px 10px;
   width: var(--score-grid-width);
   margin: 0 auto;
   align-items: start;
@@ -244,7 +244,7 @@ label {
   padding: 0;
   display: grid;
   grid-template-columns: var(--score-col1, max-content) var(--score-col2, minmax(96px, 160px));
-  gap: 8px 12px;
+  gap: 8px 10px;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -330,7 +330,7 @@ body.is-mobile-device .score-header > div {
 .setup-section.hole-grid {
   display: grid;
   grid-template-columns: var(--score-col1, max-content) var(--score-col2, minmax(96px,160px));
-  gap: 8px 0px;
+  gap: 8px 10px;
   align-items: center;
   justify-content: center;
 }
